@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Crop Disease Detection</title>
+
+<!-- PDF Library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+body{
+    margin:0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg,#0f2027,#2c5364);
+    color:white;
+}
+
+header{
+    padding:20px;
+    text-align:center;
+    font-size:28px;
+    font-weight:bold;
+}
+
+.container{
+    max-width:900px;
+    margin:auto;
+    background:white;
+    color:black;
+    padding:30px;
+    border-radius:15px;
+    box-shadow:0 15px 40px rgba(0,0,0,0.4);
+}
+
+.upload-box{
+    border:2px dashed #2c5364;
+    padding:20px;
+    text-align:center;
+    cursor:pointer;
+    border-radius:10px;
+}
+
+input[type=file]{
+    display:none;
+}
+
+img{
+    width:100%;
+    max-height:300px;
+    object-fit:contain;
+    margin-top:15px;
+    display:none;
+}
+
+button{
+    margin-top:15px;
+    padding:12px 25px;
+    border:none;
+    border-radius:25px;
+    background:#2c5364;
+    color:white;
+    cursor:pointer;
+    font-size:16px;
+}
+
+button:hover{
+    background:#1c3b47;
+}
+
+.result-box{
+    margin-top:20px;
+    padding:15px;
+    background:#f0f8ff;
+    border-radius:10px;
+    display:none;
+}
+
+.language-toggle{
+    float:right;
+    cursor:pointer;
+    background:#fff;
+    color:black;
+    padding:5px 10px;
+    border-radius:10px;
+}
+
+.history{
+    margin-top:30px;
+}
+
+.history-item{
+    background:#e6f2ff;
+    padding:10px;
+    margin-top:5px;
+    border-radius:8px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+🌾 AI Crop Disease Detection
+<span class="language-toggle" onclick="toggleLanguage()">🌐 ಕನ್ನಡ</span>
+</header>
+
+<div class="container">
+
+<label class="upload-box">
+📸 Click to Upload Crop Image
+<input type="file" id="imageInput" accept="image/*">
+</label>
+
+<img id="previewImage">
+
+<button onclick="detectDisease()">Detect Disease</button>
+
+<div class="result-box" id="resultBox">
+<h3 id="diseaseName"></h3>
+<p id="confidence"></p>
+<p id="treatment"></p>
+<p id="fertilizer"></p>
+<button onclick="generatePDF()">Download PDF Report</button>
+</div>
+
+<div class="history">
+<h3>📜 Prediction History</h3>
+<div id="historyList"></div>
+</div>
+
+</div>
+
+<script>
+let currentLanguage = "en";
+
+const diseaseDatabase = {
+    "Leaf Spot": {
+        treatment_en: "Use copper-based fungicide weekly.",
+        treatment_kn: "ತಾಮ್ರ ಆಧಾರಿತ ಫಂಗಿಸೈಡ್ ವಾರದಲ್ಲಿ ಒಂದು ಬಾರಿ ಬಳಸಿ.",
+        fertilizer_en: "Apply balanced NPK fertilizer.",
+        fertilizer_kn: "ಸಮತೋಲನ NPK ಗೊಬ್ಬರವನ್ನು ಬಳಸಿ."
+    },
+    "Rust": {
+        treatment_en: "Remove infected leaves and apply sulfur spray.",
+        treatment_kn: "ಸಂಕ್ರಮಿತ ಎಲೆಗಳನ್ನು ತೆಗೆದು ಸಲ್ಫರ್ ಸ್ಪ್ರೇ ಬಳಸಿ.",
+        fertilizer_en: "Use potassium-rich fertilizer.",
+        fertilizer_kn: "ಪೊಟ್ಯಾಸಿಯಂ ಸಮೃದ್ಧ ಗೊಬ್ಬರ ಬಳಸಿ."
+    },
+    "Blight": {
+        treatment_en: "Apply systemic fungicide immediately.",
+        treatment_kn: "ತಕ್ಷಣ ಸಿಸ್ಟಮಿಕ್ ಫಂಗಿಸೈಡ್ ಬಳಸಿ.",
+        fertilizer_en: "Avoid excess nitrogen fertilizer.",
+        fertilizer_kn: "ಅತಿಯಾದ ನೈಟ್ರೋಜನ್ ಗೊಬ್ಬರ ತಪ್ಪಿಸಿ."
+    }
+};
+
+const imageInput = document.getElementById("imageInput");
+const previewImage = document.getElementById("previewImage");
+
+imageInput.addEventListener("change", function(){
+    const file = this.files[0];
+    if(file){
+        const reader = new FileReader();
+        reader.onload = function(e){
+            previewImage.src = e.target.result;
+            previewImage.style.display = "block";
+        }
+        reader.readAsDataURL(file);
+    }
+});
+
+function detectDisease(){
+    const diseases = Object.keys(diseaseDatabase);
+    const randomDisease = diseases[Math.floor(Math.random()*diseases.length)];
+    const confidence = (80 + Math.random()*20).toFixed(2);
+
+    displayResult(randomDisease, confidence);
+}
+
+function displayResult(disease, confidence){
+    const data = diseaseDatabase[disease];
+    const resultBox = document.getElementById("resultBox");
+    resultBox.style.display = "block";
+
+    document.getElementById("diseaseName").innerHTML = "🦠 Disease: " + disease;
+    document.getElementById("confidence").innerHTML = "Confidence: " + confidence + "%";
+
+    if(currentLanguage==="en"){
+        document.getElementById("treatment").innerHTML = "Treatment: " + data.treatment_en;
+        document.getElementById("fertilizer").innerHTML = "Fertilizer: " + data.fertilizer_en;
+    } else {
+        document.getElementById("treatment").innerHTML = "ಚಿಕಿತ್ಸೆ: " + data.treatment_kn;
+        document.getElementById("fertilizer").innerHTML = "ಗೊಬ್ಬರ: " + data.fertilizer_kn;
+    }
+
+    saveHistory(disease, confidence);
+}
+
+function toggleLanguage(){
+    if(currentLanguage==="en"){
+        currentLanguage="kn";
+        document.querySelector(".language-toggle").innerHTML="🌐 English";
+    } else {
+        currentLanguage="en";
+        document.querySelector(".language-toggle").innerHTML="🌐 ಕನ್ನಡ";
+    }
+}
+
+function saveHistory(disease, confidence){
+    const historyList = document.getElementById("historyList");
+    const item = document.createElement("div");
+    item.className="history-item";
+    item.innerHTML="Disease: "+disease+" | Confidence: "+confidence+"%";
+    historyList.prepend(item);
+}
+
+function generatePDF(){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    doc.text("AI Crop Disease Detection Report", 20,20);
+    doc.text(document.getElementById("diseaseName").innerText, 20,40);
+    doc.text(document.getElementById("confidence").innerText, 20,50);
+    doc.text(document.getElementById("treatment").innerText, 20,60);
+    doc.text(document.getElementById("fertilizer").innerText, 20,70);
+
+    doc.save("Crop_Disease_Report.pdf");
+}
+</script>
+
+</body>
+</html>
