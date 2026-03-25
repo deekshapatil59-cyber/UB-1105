@@ -9,8 +9,11 @@ This project detects crop diseases using AI techniques to help farmers identify 
 - Helps improve crop health
 
 ## Technologies Used
-- Python
-- Machine Learning
+- HTML5 – For building the structure of the user interface
+- CSS3 – For styling and creating a modern responsive design
+- JavaScript – For implementing dynamic features and logic
+- jsPDF – For generating downloadable PDF reports
+- Browser APIs – For image preview and file handling
 
 ## Project Files
 - Project Report
